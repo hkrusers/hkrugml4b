@@ -115,7 +115,7 @@ euro %>% filter(Position != "Goalkeeper" & Stamina > 0) %>%
   arrange(desc(mean_acc))
 
 euro %>% filter(Stamina > 0) %>% group_by(Position) %>% 
-  mutate(staminaz = (Stamina - sd(Stamina)) / mean(Stamina)) %>% 
+  mutate(staminaz = (Stamina - mean(Stamina)) / sd(Stamina)) %>% 
   select(Name, Position ,staminaz) %>% arrange(desc(staminaz))
 
 
@@ -125,7 +125,7 @@ euro %>% filter(Stamina > 0) %>% group_by(Position) %>%
 ### top_n: select the best n based on a column
 
 euro %>% filter(Stamina > 0) %>% group_by(Position) %>% 
-  mutate(staminaz = (Stamina - sd(Stamina)) / mean(Stamina)) %>% 
+  mutate(staminaz = (Stamina - mean(Stamina)) / sd(Stamina)) %>% 
   select(Name, Position ,staminaz) %>%
   top_n(2, staminaz) %>% arrange(Position, desc(staminaz))
 
