@@ -1,0 +1,317 @@
+---
+title: "Linear Regression"
+author: "HK R User Group"
+date: "8 March, 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Introduction
+
+
+## LICENSE
+
+These slides are adapted from the materials of R for Data Science.
+[http://r4ds.had.co.nz/model-basics.html](http://r4ds.had.co.nz/model-basics.html)
+
+## Before we starts
+
+> All models are wrong, but some are useful.
+
+
+
+## Package we will need 
+
+```{r, message = FALSE, echo=TRUE}
+# General pre-requisite
+library(tidyverse)
+library(modelr)
+library(glmnet)
+```
+
+```{r}
+plot_prediction <- function(mod, data){
+  grid <- data %>% 
+    data_grid(x=seq_range(x,1000)) %>%
+    add_predictions(mod)
+  
+  ggplot(data, aes(x)) +
+    geom_point(aes(y = y)) +
+    geom_line(aes(y = pred), data = grid, colour = "red", size = 1) 
+
+}
+```
+
+
+## First example
+
+```{r}
+data(sim1)
+ggplot(sim1, aes(x, y)) + 
+  geom_point()
+```
+
+## Primary School Mathematics
+
+y = m * x + c
+
+Goal: find slope m and intercept c.
+
+## Which line is the best?
+
+```{r, echo=FALSE}
+models <- tibble(
+  a1 = runif(250, -20, 40),
+  a2 = runif(250, -5, 5)
+)
+
+ggplot(sim1, aes(x, y)) + 
+  geom_abline(aes(intercept = a1, slope = a2), data = models, alpha = 1/4) +
+  geom_point() 
+```
+
+
+## Minimize the blue distances
+
+```{r, echo = FALSE}
+dist1 <- sim1 %>% 
+  mutate(
+    dodge = rep(c(-1, 0, 1) / 20, 10),
+    x1 = x + dodge,
+    pred = 7 + x1 * 1.5
+  )
+
+ggplot(dist1, aes(x1, y)) + 
+  geom_abline(intercept = 7, slope = 1.5, colour = "grey40") +
+  geom_point(colour = "grey40") +
+  geom_linerange(aes(ymin = y, ymax = pred), colour = "#3366FF") 
+```
+
+Black line - prediction of the model
+Blue line - differences between actual and prediction (residuals)
+
+## Minimize the sum of squared of residuals
+
+**Minimize the sum of squared distance of the residuals.**
+
+$$ \min r_1^2 + \dots + r_n^2 $$
+
+## Result
+
+```{r}
+model1 <- function(a, data) {
+  a[1] + data$x * a[2]
+}
+
+measure_distance <- function(mod, data) {
+  diff <- data$y - model1(mod, data)
+  sqrt(mean(diff ^ 2))
+}
+
+sim1_dist <- function(a1, a2) {
+  measure_distance(c(a1, a2), sim1)
+}
+
+models <- models %>% 
+  mutate(dist = purrr::map2_dbl(a1, a2, sim1_dist))
+
+ggplot(sim1, aes(x, y)) + 
+  geom_point(size = 2, colour = "grey30") + 
+  geom_abline(
+    aes(intercept = a1, slope = a2, colour = -dist), 
+    data = filter(models, rank(dist) <= 10)
+  )
+```
+
+
+## The best model is highlighted in red
+
+```{r}
+models %>% rename(intercept = a1, slope = a2 ) -> tmp
+
+ggplot(tmp, aes(intercept, slope)) +
+  geom_point(data = filter(tmp, rank(dist) <= 10), size = 4, colour = "red") +
+  geom_point(aes(colour = -dist))
+```
+
+
+## No need to test random lines
+
+Use **lm**
+
+```{r, echo=TRUE}
+sim1_mod <- lm(y~x, data=sim1)
+coef(sim1_mod)
+```
+
+# Lab Time 1 - play with some regression
+
+
+# Feature engineering
+
+## More difficult
+
+```{r, echo=FALSE}
+# Create data for Lab 2
+n <- 50
+my_data <- tibble(x=runif(n)*6) %>%
+  mutate(y = exp( 3 * log(x)+ 0.5*rnorm(n)))
+
+
+
+my_data %>% write_rds(path="my_data.rds")
+
+
+```
+
+```{r, echo=FALSE}
+# Lets simulate some data first
+my_data <- tibble(x=runif(30)*10) %>%
+  mutate(y = 10 - 2*x*2 + 2* x^2 + 5*rnorm(30))
+library(readr)
+
+my_data %>% ggplot(aes(x,y)) + geom_point()
+
+
+
+```
+
+## Straight line
+
+```{r, echo=TRUE}
+mod <- lm(y~x ,data=my_data)
+coef(mod)
+```
+
+## Lets plot the fitted straight line
+```{r}
+# Use modelr helper function
+grid <- my_data %>% 
+  data_grid(x) %>%
+  add_predictions(mod)
+
+ggplot(my_data, aes(x)) +
+  geom_point(aes(y = y)) +
+  geom_line(aes(y = pred), data = grid, colour = "red", size = 1)
+```
+
+
+## Diagnosis plot
+
+```{r}
+plot(fitted(mod), resid(mod))
+```
+
+Definitely some patterns to be captured.
+
+
+
+## Add a squared term
+
+```{r, echo=TRUE}
+mod <- lm(y~x + I(x^2) ,data=my_data)
+coef(mod)
+```
+
+## Lets plot the fitted line
+Much better!
+```{r}
+# Use modelr helper function
+grid <- my_data %>% 
+  data_grid(x) %>%
+  add_predictions(mod)
+
+ggplot(my_data, aes(x)) +
+  geom_point(aes(y = y)) +
+  geom_line(aes(y = pred), data = grid, colour = "red", size = 1)
+```
+
+
+## Diagnosis plot
+
+```{r}
+plot(fitted(mod), resid(mod))
+```
+
+
+# Lab Time - Feature Engineering
+
+
+# Overfit?
+
+## Bias-Variance tradeoff
+
+What if we overdo the feature engineering?
+
+## Example 
+
+```{r, echo=FALSE}
+mod_overfit <- lm(y~poly(x,degree=15) ,data=my_data)
+plot_prediction(mod, my_data)
+```
+
+## Danger of Overfitting!
+
+Fit the training data well, but cannot generalize well to other data. 
+
+## Penalised Linear Model
+
+
+$$\min \sum_i (y_i - \alpha - \beta_1 x_i - \beta_2 z_i)^2$$
+
+L1 regularization(LASSO):
+
+$$\text{subject to } |\beta_1| + |\beta_2| \leq \lambda$$
+
+L2 regularization(Ridge):
+
+$$\text{subject to } |\beta_1|^2 + |\beta_2|^2 \leq \lambda$$
+
+
+
+# Lab time - overfit and variable selection
+
+
+
+
+
+# Lab time
+
+# Bonus
+
+## Robustness
+It only takes a point to change the result of the fit.
+
+Belgium Phone call statistics:
+
+```{r}
+library(readr)
+phones <- readRDS("phones.rds")
+phones %>% data.frame() %>% ggplot(aes(x=year, y=calls)) + geom_point()
+```
+
+## Does not look right
+
+```{r, fig.width=8, fig.height=3,echo=TRUE}
+lm_mod <- lm(calls~year ,data=phones)
+phones %>% data.frame() %>% ggplot(aes(x=year, y=calls)) + geom_point() +
+  geom_abline(intercept=coef(lm_mod)[1],
+              slope=coef(lm_mod)[2])
+```
+
+## Robust regression
+
+```{r, fig.width=8, fig.height=3, echo=TRUE}
+lms_mod <- MASS::lmsreg(calls~year ,data=phones)
+phones %>% data.frame() %>% ggplot(aes(x=year, y=calls)) + geom_point() +
+  geom_abline(intercept=coef(lms_mod)[1],
+              slope=coef(lms_mod)[2])
+```
+
+## R Markdown
+
+This is an R Markdown presentation. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
