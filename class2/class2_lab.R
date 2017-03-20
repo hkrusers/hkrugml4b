@@ -79,6 +79,7 @@ coef(mod3)
 plot_prediction(mod3, my_log_data)
 
 
+#######################
 # Categorical Variable
 View(sim2)
 
@@ -119,23 +120,9 @@ diamonds %>% ggplot(aes(x=carat, y=price)) +
 # y = a x^b
 # log(y) = log(a) + b * log(x)
 diamonds2 <- diamonds %>% 
-  filter(carat<=2.5) %>%
   mutate(lprice = log2(price), lcarat = log2(carat))
 
-ggplot(diamonds2, aes(lcarat, lprice)) + 
-  geom_hex(bins = 50)
-
-mod_diamond <- lm(lprice ~ lcarat, data = diamonds2)
-
-grid <- diamonds2 %>% 
-  data_grid(carat = seq_range(carat, 20)) %>% 
-  mutate(lcarat = log2(carat)) %>% 
-  add_predictions(mod_diamond, "lprice") %>% 
-  mutate(price = 2 ^ lprice)
-
-ggplot(diamonds2, aes(carat, price)) + 
-  geom_hex(bins = 50) + 
-  geom_line(data = grid, colour = "red", size = 1)
+diamonds2 %>% ggplot(aes(lcarat, lprice)) + geom_hex(bins=50)
 
 ##########################
 # 3rd Lab Session
@@ -173,6 +160,19 @@ std_fold <- my_data_with_random_bits %>% crossv_kfold(k=5)
 
 # Look at what is this
 std_fold
+
+myfun <- function(in_data){
+  #map(in_data, )
+  myfun1 <- function(data) lm(y~x, data=data)
+  lapply(in_data, myfun1)
+}
+
+std_fold %>%
+#  mutate_at("train",myfun)
+  mutate(model= myfun(train)) %>% 
+  mutate(rmse_test = map2_dbl(model, test, rmse)) %>%
+  mutate(rmse_train = map2_dbl(model, train, rmse)) %>%
+  summarise(mean(rmse_test), mean(rmse_train)) # Lower error
 
 std_fold %>%
   mutate(model= map(train, ~lm(y~x, data=.))) %>%
@@ -301,18 +301,6 @@ daily %>%
   geom_smooth(se = FALSE, span = 0.20)
 
 
-
-
-daily %>% 
-  filter(wday == "Sat") %>% 
-  ggplot(aes(date, n)) + 
-  geom_point() + 
-  geom_line() +
-  scale_x_date(NULL, date_breaks = "1 month", date_labels = "%b")
-
-
-
-
 term <- function(date) {
   cut(date, 
       breaks = ymd(20130101, 20130605, 20130825, 20140101),
@@ -322,19 +310,6 @@ term <- function(date) {
 
 daily <- daily %>% 
   mutate(term = term(date)) 
-
-daily %>% 
-  filter(wday == "Sat") %>% 
-  ggplot(aes(date, n, colour = term)) +
-  geom_point(alpha = 1/3) + 
-  geom_line() +
-  scale_x_date(NULL, date_breaks = "1 month", date_labels = "%b")
-
-
-daily %>% 
-  ggplot(aes(wday, n, colour = term)) +
-  geom_boxplot()
-
 
 
 mod1 <- lm(n ~ wday, data = daily)
@@ -365,14 +340,4 @@ daily %>%
 
 coef(mod3)
 
-# BONUS: spline
-library(splines)
-mod <- MASS::rlm(n ~ wday * ns(date, 5), data = daily)
-
-daily %>% 
-  data_grid(wday, date = seq_range(date, n = 13)) %>% 
-  add_predictions(mod) %>% 
-  ggplot(aes(date, pred, colour = wday)) + 
-  geom_line() +
-  geom_point()
 

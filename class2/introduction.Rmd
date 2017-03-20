@@ -160,11 +160,7 @@ n <- 50
 my_data <- tibble(x=runif(n)*6) %>%
   mutate(y = exp( 3 * log(x)+ 0.5*rnorm(n)))
 
-
-
 my_data %>% write_rds(path="my_data.rds")
-
-
 ```
 
 ```{r, echo=FALSE}
@@ -174,9 +170,6 @@ my_data <- tibble(x=runif(30)*10) %>%
 library(readr)
 
 my_data %>% ggplot(aes(x,y)) + geom_point()
-
-
-
 ```
 
 ## Straight line
@@ -248,9 +241,10 @@ What if we overdo the feature engineering?
 
 ## Example 
 
+$$y = \beta_0 + \beta_1 x + \beta_2 x^2 + \dots + \beta_{15} x^{15}$$
 ```{r, echo=FALSE}
 mod_overfit <- lm(y~poly(x,degree=15) ,data=my_data)
-plot_prediction(mod, my_data)
+plot_prediction(mod_overfit, my_data)
 ```
 
 ## Danger of Overfitting!
@@ -273,9 +267,6 @@ $$\text{subject to } |\beta_1|^2 + |\beta_2|^2 \leq \lambda$$
 
 
 # Lab time - overfit and variable selection
-
-
-
 
 
 # Lab time
