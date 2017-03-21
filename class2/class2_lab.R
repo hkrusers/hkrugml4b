@@ -5,6 +5,7 @@ library(tidyverse)
 library(modelr)
 library(nycflights13)
 library(lubridate)
+library(glmnet)
 
 #####################
 ## 1st Lab
