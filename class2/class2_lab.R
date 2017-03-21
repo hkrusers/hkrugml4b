@@ -22,14 +22,26 @@ ggplot(sim1, aes(x, y)) +
   geom_point()
 
 # Lets fit it
+# R formula
+# y = c + m * x
+# y ~ 1 + x
+
 mod <- lm(y~1+x, sim1)
+mod <- lm(y~x, sim1) # same as above line
+
+mod
+# y = 4.221 + 2.052 x
 
 # plot it
-grid <- sim1 %>% 
-  data_grid(x) %>%
-  add_predictions(mod)
+grid <- data.frame(x=-10:10) %>% add_predictions(mod)
 
-ggplot(sim1, aes(x)) +
+#grid <- sim1 %>% 
+#  data_grid(x) %>%
+#  add_predictions(mod)
+
+grid %>% ggplot(aes(x=x,y=pred)) + geom_line()
+
+ggplot(sim1, aes(x = x)) +
   geom_point(aes(y = y)) +
   geom_line(aes(y = pred), data = grid, colour = "red", size = 1)
 
@@ -61,7 +73,7 @@ my_data %>% ggplot(aes(x,y)) + geom_point()
 
 
 # Try x^2 first
-mod1 <- lm(y~I(x^2), my_data)
+mod1 <- lm(y~x+I(x^2), my_data)
 plot_prediction(mod1, my_data)
 plot(fitted(mod1), resid(mod1))
 
@@ -72,7 +84,9 @@ plot(fitted(mod2), resid(mod2))
 
 
 # Secondary school maths
-# y = a x^b
+# y = c + a x^b
+# log(y) = log( a * x^b)
+#        = log(a) + b * log(x)
 # log(y) = log(a) + b * log(x)
 my_log_data <- my_data %>% mutate(y=log(y))
 mod3 <- lm(y~log(x), my_log_data)
@@ -82,6 +96,8 @@ plot_prediction(mod3, my_log_data)
 
 #######################
 # Categorical Variable
+data(sim2)
+
 View(sim2)
 
 # look at what that x is
@@ -95,7 +111,7 @@ mod2 <- lm(y ~ x, data = sim2)
 coef(mod2)
 
 # Review the model matrix
-model.matrix(y~x, data=sim2)
+model.matrix(y~x, data=sim2) %>% View()
 
 grid <- sim2 %>% 
   data_grid(x) %>% 
@@ -117,6 +133,14 @@ data(diamonds)
 diamonds %>% ggplot(aes(x=carat, y=price)) + 
   geom_hex(bins = 50)
 
+
+install.packages("plotly")
+library(plotly)
+diamonds %>% ggplot(aes(x=carat, y=price)) + 
+  geom_hex(bins = 50) -> my_plot
+ggplotly(my_plot)
+
+
 # Secondary school maths
 # y = a x^b
 # log(y) = log(a) + b * log(x)
@@ -137,43 +161,28 @@ hk_r_user_data <- tibble(x = runif(n),
                           y = 10 *x + rnorm(n)
                           )
 
+hk_r_user_data %>% View()
 # plot it
 hk_r_user_data %>% ggplot(aes(x=x, y=y)) + geom_point()
 
-data_with_random_bits <- hk_ruser_model %>%
-  mutate(z1=runif(nrow(my_data)),
-         z2=runif(nrow(my_data)),
-         z3=runif(nrow(my_data)),
-         z4=runif(nrow(my_data)),
-         z5=runif(nrow(my_data)),
-         z6=runif(nrow(my_data)),
-         z7=runif(nrow(my_data)),
-         z8=runif(nrow(my_data)),
-         z9=runif(nrow(my_data)),
-         z10=runif(nrow(my_data))
+data_with_random_bits <- hk_r_user_data %>%
+  mutate(z1=runif(nrow(hk_r_user_data)),
+         z2=runif(nrow(hk_r_user_data)),
+         z3=runif(nrow(hk_r_user_data)),
+         z4=runif(nrow(hk_r_user_data)),
+         z5=runif(nrow(hk_r_user_data)),
+         z6=runif(nrow(hk_r_user_data)),
+         z7=runif(nrow(hk_r_user_data)),
+         z8=runif(nrow(hk_r_user_data)),
+         z9=runif(nrow(hk_r_user_data)),
+         z10=runif(nrow(hk_r_user_data))
   )
-
-mod_overfit <- lm(y~. , data=my_data_with_random_bits)
+data_with_random_bits %>% View()
+mod_overfit <- lm(y~. , data=data_with_random_bits)
 
 # Cross validatation
 # https://drsimonj.svbtle.com/k-fold-cross-validation-with-modelr-and-broom
-std_fold <- my_data_with_random_bits %>% crossv_kfold(k=5) 
-
-# Look at what is this
-std_fold
-
-myfun <- function(in_data){
-  #map(in_data, )
-  myfun1 <- function(data) lm(y~x, data=data)
-  lapply(in_data, myfun1)
-}
-
-std_fold %>%
-#  mutate_at("train",myfun)
-  mutate(model= myfun(train)) %>% 
-  mutate(rmse_test = map2_dbl(model, test, rmse)) %>%
-  mutate(rmse_train = map2_dbl(model, train, rmse)) %>%
-  summarise(mean(rmse_test), mean(rmse_train)) # Lower error
+std_fold <- data_with_random_bits %>% crossv_kfold(k=5) 
 
 std_fold %>%
   mutate(model= map(train, ~lm(y~x, data=.))) %>%
