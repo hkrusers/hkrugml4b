@@ -32,6 +32,12 @@ ggplot(euro, aes(x = Age, y = Stamina)) + geom_point()
 
 ggplot(euro, aes(x = Age, y = Stamina, col = Position)) + geom_point()
 
+head(euro)
+
+euro %>% head %>% View
+
+View(head(euro))
+
 
 ### "I fear not the man who has practiced 10000 kicks once, but I fear the man who has practiced one kick 10000 times." ~ Bruce Lee
 
@@ -40,11 +46,11 @@ ggplot(euro, aes(x = Age, y = Stamina, col = Position)) + geom_point()
 
 ## Verb2: select(): select columns
 
-euro %>% select(Name, Position, Stamina)
+euro %>% select(Name, League)
 
 ## Verb 1: filter(): select rows
 
-euro %>% filter(Stamina > 95)
+euro %>% filter(Stamina < 10) %>% View
 
 ## Compositity: Write programs that do one thing and do it well. Write programs to work together.
 
@@ -72,21 +78,26 @@ euro %>% arrange(desc(Stamina), Position) %>%
 
 euro %>% select(Name, Weight, Height)
 
+euro %>% mutate(HeightM = Height / 100) %>% View
+
 euro %>% mutate(BMI = Weight / (Height / 100)^2) %>% 
   select(Name, Weight, Height, BMI)
 
 ## Arrange by BMI
 
 euro %>% mutate(BMI = Weight / (Height / 100)^2) %>% 
-  select(Name, Weight, Height, BMI) %>% arrange(desc(BMI))
+  select(Name, Weight, Height, BMI, Team) %>% arrange(desc(BMI))
 
 euro %>% mutate(BMI = Weight / (Height / 100)^2) %>% 
   select(Name, Weight, Height, BMI) %>% arrange(BMI)
 
-euro %>% mutate(BMI = Weight / (Height / 100)^2) %>% 
+euro %>% filter(Position == "Goalkeeper") %>% mutate(BMI = Weight / (Height / 100)^2) %>% 
   filter(Stamina > 10) %>% 
   select(Name, Weight, Height, BMI, Stamina, Age, Position) %>% 
-  ggplot(aes(x = Age, y = Stamina, col = Position)) + geom_point()
+  ggplot(aes(x = BMI, y = Stamina, col = Position)) + geom_point()
+
+euro %>% filter(Position == "Goalkeeper") %>% arrange(Stamina) %>% 
+  select(Name, Stamina)
 
 ## Verb 5: Summarise
 
@@ -97,7 +108,7 @@ euro %>% summarise(mean_sta = mean(Stamina), sd_sta = sd(Stamina))
 euro %>% group_by(Position)
 
 euro %>% group_by(Position) %>% 
-  summarise(mean_sta = mean(Stamina), sd_sta = sd(Stamina))
+  summarise(mean_sta = mean(Stamina), median_sta = median(Stamina))
 
 ## Remember the outlier
 
