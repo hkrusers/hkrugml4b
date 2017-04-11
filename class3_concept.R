@@ -65,7 +65,10 @@ mean(knn(rubbish[train, -3], rubbish[-train, -3], rubbish$gp[train], k = 22) == 
 
 require(e1071)
 
-svmm <- svm(rubbish[train, -3], as.factor(rubbish$gp[train]))
+svmm <- svm(gp ~ x+y, data = rubbish[train,], type = 'C-classification')
+#svmm <- svm(x = rubbish[train, -3], y = as.factor(rubbish$gp[train]))
+
+
 table(predict(svmm), rubbish$gp[train])
 
 table(predicted = predict(svmm, newdata = rubbish[-train, -3]), actual = rubbish$gp[-train])
