@@ -19,6 +19,16 @@ ggplot(rubbish, aes(x = x, y = y, color = gp)) + geom_point()
 set.seed(689)
 train <- sample(1:600, size = 500)
 
+## KNN
+
+require(class)
+
+knn(rubbish[train, -3], rubbish[train, -3], rubbish$gp[train], k = 3)
+
+table(knn(rubbish[train, -3], rubbish[train, -3], rubbish$gp[train], k = 3), rubbish$gp[train])
+
+table(knn(rubbish[train, -3], rubbish[-train, -3], rubbish$gp[train], k = 3), rubbish$gp[-train])
+
 ### You may use Logistic regression
 
 lgm <- glm(as.factor(gp)~x+y, data = rubbish[train,], family = binomial)
@@ -55,11 +65,6 @@ table(predicted = res_test, actual = rubbish[-train,]$gp)
 
 ## ((res_rpart_test> 0.5)[,1] == (rubbish[-train,]$gp == "A")) %>% mean
 
-## OR KNN
-
-require(class)
-
-mean(knn(rubbish[train, -3], rubbish[-train, -3], rubbish$gp[train], k = 22) == rubbish$gp[-train])
 
 ## OR svm (support vector machine)
 
