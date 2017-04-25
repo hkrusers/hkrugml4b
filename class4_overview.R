@@ -142,7 +142,6 @@ titanic_df %>% select(pclass, survived, embarked, parch, sibsp, sex) %>%
 
 top.lift <- sort(rules, decreasing = TRUE, na.last = NA, by = "lift")
 inspect(head(top.lift, 10))
-sort(inspect(rules), by=order('lift'))
 
 
 #############
@@ -152,4 +151,3 @@ library(mvoutlier)
 data(iris)
 # Assume a normally distributed set of variables, are there any abnormal observations (outliers?)
 (outliers <- aq.plot(iris[,1:4]))
-
