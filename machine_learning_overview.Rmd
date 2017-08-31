@@ -1,0 +1,163 @@
+---
+title: "Overview of Machine Learning in R"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Linear regression
+
+## Finding trend with regression
+
+```{r, message = FALSE, echo=FALSE}
+# General pre-requisite
+library(tidyverse)
+library(modelr)
+#library(glmnet)
+```
+
+```{r}
+data(sim1)
+ggplot(sim1, aes(x, y)) + 
+  geom_point()
+```
+
+
+## Minimize the blue distances
+
+```{r, echo = FALSE}
+dist1 <- sim1 %>% 
+  mutate(
+    dodge = rep(c(-1, 0, 1) / 20, 10),
+    x1 = x + dodge,
+    pred = 7 + x1 * 1.5
+  )
+
+ggplot(dist1, aes(x1, y)) + 
+  geom_abline(intercept = 7, slope = 1.5, colour = "grey40") +
+  geom_point(colour = "grey40") +
+  geom_linerange(aes(ymin = y, ymax = pred), colour = "#3366FF") 
+```
+
+Black line - prediction of the model
+Blue line - differences between actual and prediction (residuals)
+
+## Code in R
+
+Use **lm**
+```{r, echo=TRUE}
+sim1_mod <- lm(y~x, data=sim1)
+coef(sim1_mod)
+```
+
+# Robust Regression
+
+## Robustness
+It only takes a point to change the result of the fit.
+
+Belgium Phone call statistics:
+
+```{r}
+library(readr)
+phones <- readRDS("class2/phones.rds")
+phones %>% data.frame() %>% ggplot(aes(x=year, y=calls)) + geom_point()
+```
+
+## Does not look right
+
+```{r, fig.width=8, fig.height=3,echo=TRUE}
+lm_mod <- lm(calls~year ,data=phones)
+phones %>% data.frame() %>% ggplot(aes(x=year, y=calls)) + geom_point() +
+  geom_abline(intercept=coef(lm_mod)[1],
+              slope=coef(lm_mod)[2])
+```
+
+## Robust regression
+
+```{r, fig.width=8, fig.height=3, echo=TRUE}
+lms_mod <- MASS::lmsreg(calls~year ,data=phones)
+phones %>% data.frame() %>% ggplot(aes(x=year, y=calls)) + geom_point() +
+  geom_abline(intercept=coef(lms_mod)[1],
+              slope=coef(lms_mod)[2])
+```
+
+
+# Classification
+
+## Decision Tree
+
+```{r,echo=TRUE, fig.width=6, fig.height=4}
+library(rpart)
+fit <- rpart(Kyphosis ~ Age + Number + Start, data = kyphosis)
+rpart.plot::rpart.plot(fit)
+```
+
+
+
+# Unsupervised Learning
+
+## Clustering
+```{r, echo=TRUE, message=FALSE}
+cl <- kmeans(iris[c("Petal.Length","Petal.Width")], 3, nstart=50)
+```
+
+```{r}
+# Lets plot it 
+iris %>% cbind(Cluster=cl$cluster) %>% select(Species, Cluster, Petal.Length, Petal.Width) %>%
+  mutate(SpeciesXCluster=paste(Species, "x", Cluster))-> iris_enriched
+#iris_enriched %>% select(Species, Cluster) %>% table()
+ggplot(iris_enriched, aes(x=Petal.Width, y=Petal.Length, color=SpeciesXCluster)) + geom_point()
+```
+
+## Anomaly Detection
+```{r, results='hide', message=FALSE, warning=FALSE, results='hide'}
+library(mvoutlier)
+data(iris)
+```
+
+
+```{r, echo=TRUE, fig.height=4}
+# Assume a normally distributed set of variables, are there any abnormal observations (outliers?)
+outliers <- mvoutlier::aq.plot(iris[,1:4])
+```
+
+## Association Rules
+```{r, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+library(arules)
+titanic_df <- read.csv("titanic.csv")
+
+# Select those discrete variables and discover their relationship
+titanic_df %>% select(pclass, survived, embarked, parch, sibsp, sex) %>% 
+  mutate(pclass=as.factor(pclass),
+         survived=as.factor(survived), 
+         sibsp=as.factor(sibsp),
+         parch=as.factor(parch)
+         ) %>% apriori() -> rules
+
+top.lift <- sort(rules, decreasing = TRUE, na.last = NA, by = "lift")
+inspect(head(top.lift, 10)) -> result
+
+```
+
+## Association Rules Result
+
+
+```{r}
+inspect(head(top.lift, 1))
+
+inspect(tail(head(top.lift, 2),1))
+
+```
+
+
+
+
+# Appendix
+
+## R Markdown
+
+This is an R Markdown presentation. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document.
